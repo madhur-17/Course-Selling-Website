@@ -12,17 +12,17 @@ const userSchema= new mongoose.Schema({
     password:String,
     purchasedcourses:{type:mongoose.Schema.Types.ObjectId,ref:'Course'},
 
-})
+});
 const adminSchema=new mongoose.Schema({
     name:{type:String},
     password:String,
-})
+});
 const courseSchema=new mongoose.Schema({
     title:String,
     description:{type:String},
     price:Number,
     imagelink:String,
-    published:Boolean
+    published:{type:Boolean},
 });
 
 const User=mongoose.model('User',userSchema);
@@ -37,13 +37,13 @@ const authenticateJwt=(req,res,next)=>{
     const token=head.split(' ')[1];
     jwt.verify(token,secret,(err,user)=>{
         req.user=user;
-        next;
+        next();
     })
     }
     else{
         res.status(404).send("Something went wrong");
     }
-}
+};
 //
 /*Amin api call*/
 //
@@ -90,8 +90,67 @@ app.put('/admin/course/:courseid',(req,res)=>{
     }
 });
 
+app.get('/admin/course',async(req,res)=>{
+    const course=await Course.find({});
+    res.json({course});
+})
+
+
 //
 /*Client Api Calls*/
 //
 
+app.post('/user/signup',async(req,res)=>{
+    const{username,password}=req.body;
+    const user=await User.findOne({username});
+    if(user){
+        res.status(404).send("user exists");
+    }
+    else{
+        const newuser=new User(req.body);
+        await newuser.save();
+        const token=jwt.sign({username,role:"User"},secret,{expiresIn:'1hr'});
+        res.json({token});
+        }
+})
 
+app.post('/user/login',(req,res)=>{
+    
+    const user=User.findOne(req.headers);
+    if(user){
+         const token=jwt.sign({username:req.headers.username,role:"User"},secret,{expiresIn:'1hr'});
+        res.send(token);
+    }
+    else{
+        res.send("invalid");
+    }
+})
+app.get('/user/course', authenticateJwt, async (req, res) => {
+    const courses = await Course.find({published: true});
+    res.json({ courses });
+  });
+
+app.post('/user/course/:courseid',authenticateJwt,async(req,res)=>{
+    const course=await Course.findByID(req.params.courseid);
+    if(course){
+        const user=User.findOne({username:req.user.username});
+        if(user){
+            user.purchasedcourses.push(course);
+            await user.save();
+            res.json({ message: 'Course purchased successfully' });
+        }
+        else {
+            res.status(403).json({ message: 'User not found' });
+          }
+
+    }
+    else{
+        res.send("course not found");
+    }
+});
+app.get('/user/purchasedcourses',authenticateJwt,async(req,res)=>{
+    const user=await User.findOne({username:req.user.username}).populate('purchasedcourses');
+    res.json({purchasedcourses:user.purchasedcourses||[]});
+
+})
+app.listen(3000,()=>console.log("Server running at 3000"));
