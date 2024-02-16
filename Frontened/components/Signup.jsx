@@ -14,7 +14,22 @@ function Signup(){
         <TextField id="email" label="Email" variant="outlined" onChange={(e)=>setEmail(e.target.value)} /><br/>
         <br/>
         <TextField id="password" label="Password" variant="outlined" type='password' onChange={e=>setPassword(e.target.value)} /><br/><br/>
-        <Button size='large' variant="outlined">Sign Up</Button>
+        <Button size='large' variant="outlined"
+        onClick={()=>{
+            fetch("http://localhost:3000/admin/signup",{
+                method:"POST",
+                body:JSON.stringify({
+                    username:email,
+                    password
+                }),
+                headers:{"Content-type":"applocation/json"}
+            }).then(res=>res.json()).then(data=>{
+                console.log(data);
+                localStorage.setItem("token",data.token);
+            });
+        }}
+        
+        >Sign Up</Button>
         </Card>
         </center>
     </>
