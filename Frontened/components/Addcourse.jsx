@@ -29,7 +29,7 @@ function Addcourse() {
                     "Content-type":"applocation/json",
                     "Authorization":"Bearer "+localStorage.getItem("token"),
                 }
-            })
+            }).then(res=>res.json()).then(data=>console.log(data));
         }}
         >Submit</Button>
         </Card>
